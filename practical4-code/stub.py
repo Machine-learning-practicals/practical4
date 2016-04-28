@@ -23,13 +23,17 @@ class Learner(object):
         self.gamma = 0.95
         self.t = 1
         self.gravity_index = None
+        self.epoch = 1.0
 
-    def reset(self):
+    def reset(self,epoch):
+    	#self.reward_callback(self.last_reward)
         self.last_state  = None
         self.last_two_state = None
         self.last_action = None
         self.last_reward = None
         self.gravity_index = None
+        #self.alpha = 0.9/(epoch+1.0)
+        #self.epoch = epoch+1.0
 
     def action_callback(self, state):
         '''
@@ -73,7 +77,7 @@ class Learner(object):
         monkey_vel_index = self.monkey_vel_index(state)
         
 
-        if npr.rand() > 1./self.t :
+        if npr.rand() > 1./self.epoch:
             new_action = np.argmax(self.Q[tree_dist_index]\
                                     [tree_top_index]\
                                     [tree_bot_index]\
@@ -89,8 +93,9 @@ class Learner(object):
 
         self.last_two_state = copy.deepcopy(self.last_state)
         self.last_state  = state
-            
         self.t +=1
+        self.alpha = 0.1/self.t    
+
         return self.last_action
     
     def tree_dist_index(self, state):
@@ -219,7 +224,7 @@ def run_games(learner, hist, iters = 100, t_len = 100):
         hist.append(swing.score)
 
         # Reset the state of the learner.
-        learner.reset()
+        learner.reset(ii)
         
     return
 
@@ -233,9 +238,10 @@ if __name__ == '__main__':
 	hist = []
 
 	# Run games. 
-	run_games(agent, hist, 200, 10)
+	run_games(agent, hist, 200, 1)
 
 	# Save history. 
+	np.savetxt('score_1overT.csv',hist,delimiter=',')
 	np.save('hist',np.array(hist))
 
 
