@@ -1,0 +1,19 @@
+# ----------------------------------------
+# README  
+# ----------------------------------------
+
+# ----------------------------------------
+# CS181 - Practical 4
+# Reinforcement Learning
+# ----------------------------------------
+
+1. Team [J.Q.G]
+
+2. Members
+- Jing Wen : jingwen@g.harvard.edu
+- Qing Zhao : qingzhao@g.harvard.edu
+- Jeewon (Grace) Hwang : jeewonhwang@g.harvard.edu
+
+3. How to run the code
+- In the current folder where 'stub.py' file is located, at the command line, type
+> python stub.py

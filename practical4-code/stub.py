@@ -23,17 +23,21 @@ class Learner(object):
         self.gamma = 0.95
         self.t = 1
         self.gravity_index = None
-        self.epoch = 1.0
+        self.epoch = 1
 
-    def reset(self,epoch):
-    	#self.reward_callback(self.last_reward)
+    def reset(self, epoch):
+        # print self.last_reward
+        # print self.last_two_state
+        # print self.last_state
+        self.reward_callback(self.last_reward)
         self.last_state  = None
         self.last_two_state = None
         self.last_action = None
         self.last_reward = None
         self.gravity_index = None
-        #self.alpha = 0.9/(epoch+1.0)
-        #self.epoch = epoch+1.0
+        # self.alpha = 0.9/epoch
+        self.epoch = epoch+1
+        # self.alpha = 0.1/(self.epoch/100 + 1)
 
     def action_callback(self, state):
         '''
@@ -75,9 +79,11 @@ class Learner(object):
         tree_top_index = self.tree_top_index(state)
         tree_bot_index = self.tree_bot_index(state)
         monkey_vel_index = self.monkey_vel_index(state)
+        monkey_bot_index = self.monkey_bot_index(state)
         
-
-        if npr.rand() > 1./self.epoch:
+        # print "eopch", self.epoch
+        # epoch_step = (self.epoch/50 + 1)
+        if npr.rand() > 1./(self.t) :
             new_action = np.argmax(self.Q[tree_dist_index]\
                                     [tree_top_index]\
                                     [tree_bot_index]\
@@ -85,7 +91,6 @@ class Learner(object):
         else:
             new_action = npr.randint(0,2)
 
-        
         # ===================
         # UPDATES
         # ===================
@@ -93,37 +98,48 @@ class Learner(object):
 
         self.last_two_state = copy.deepcopy(self.last_state)
         self.last_state  = state
+            
         self.t +=1
-        self.alpha = 0.1/self.t    
-
         return self.last_action
+    
+    def monkey_bot_index(self, state):
+        # assume the range (0 ~ 400)
+        monkey_bot = state['monkey']['bot']
+        monkey_bot_binsize = 400/10
+        monkey_bot_index = (monkey_bot)/monkey_bot_binsize
+        return monkey_bot_index
+
     
     def tree_dist_index(self, state):
         # function that returns the tree_dist_index
         # assume the range(-150~500)
-        tree_dist_binsize = 650.0/(50)
+        tree_dist_binsize = 650/13
         tree_dist = state['tree']['dist']
+        # print "tree_dist", tree_dist
         # print tree_dist
         # if tree_dist < 0: # if negative, useless
         #     tree_dist_index = 0
         # else :
         #     tree_dist_index = int(math.ceil(tree_dist/tree_dist_binsize))
-        tree_dist_index = int(math.ceil((tree_dist+150)/tree_dist_binsize))
+        # tree_dist_index = int(math.ceil((tree_dist+150)/tree_dist_binsize))
+        tree_dist_index = (tree_dist+150-1)/tree_dist_binsize
 
         return tree_dist_index
 
     def tree_top_index(self, state):
         # tree_top range (-200 ~ 400)
         tree_top = state['tree']['top'] - state['monkey']['top']
-        tree_top_binsize = 600/(20)
-        tree_top_index = (tree_top+200)/tree_top_binsize
+        # print "top gap", tree_top
+        tree_top_binsize = 600/15
+        tree_top_index = (tree_top+200-1)/tree_top_binsize
         return tree_top_index
 
     def tree_bot_index(self, state):
         # tree_bottom ragne (-200 ~ 400)
         tree_bottom = state['monkey']['top'] - state['tree']['bot']
-        tree_bottom_binsize = 600/(20)
-        tree_bottom_index = (tree_bottom+200)/tree_bottom_binsize
+        # print "bottom gap", tree_bottom
+        tree_bottom_binsize = 600/15
+        tree_bottom_index = (tree_bottom+200-1)/tree_bottom_binsize
         return tree_bottom_index
 
     def monkey_vel_index(self, state):
@@ -131,7 +147,7 @@ class Learner(object):
         monkey_vel = state['monkey']['vel']
         # we assume that only deal with when vel = -40 ~ 40
         # the other 2 extreme value, we'll just put into 0th and 9th cell
-        monkey_vel_binsize = 80/(20-2)
+        monkey_vel_binsize = 80/(5-2)
         if monkey_vel < -40:
             monkey_vel_index = 0
         elif monkey_vel > 40 :
@@ -161,13 +177,15 @@ class Learner(object):
         tree_top_index = self.tree_top_index(self.last_two_state)
         tree_bot_index = self.tree_bot_index(self.last_two_state)
         monkey_vel_index = self.monkey_vel_index(self.last_two_state)
+        monkey_bot_index = self.monkey_bot_index(self.last_two_state)
 
         # print self.gravity_index
         # print "gravity_index", gravity_index
         # print self.last_state
         # print self.last_two_state
-
+        # print monkey_vel_index
         # print "last sate vel", self.last_state['monkey']['vel']
+        
         oldQ = self.Q[tree_dist_index]\
                     [tree_top_index]\
                     [tree_bot_index]\
@@ -179,6 +197,7 @@ class Learner(object):
         new_tree_top_index = self.tree_top_index(self.last_state)
         new_tree_bot_index = self.tree_bot_index(self.last_state)
         new_monkey_vel_index = self.monkey_vel_index(self.last_state)
+        new_monkey_bot_index = self.monkey_bot_index(self.last_state)
 
         # print self.gravity_index
         # print self.Q[new_tree_dist_index]\
@@ -190,7 +209,7 @@ class Learner(object):
                                             [new_tree_top_index]\
                                             [new_tree_bot_index]\
                                             [self.gravity_index])])
-    
+        # print "alpha", self.alpha
         self.Q[tree_dist_index]\
             [tree_top_index]\
             [tree_bot_index]\
@@ -200,6 +219,7 @@ class Learner(object):
 
 
         self.last_reward = reward
+        # print "oldQ", oldQ, "newQ", newQ, "difference", newQ-oldQ
         return        
 
 
@@ -231,17 +251,16 @@ def run_games(learner, hist, iters = 100, t_len = 100):
 
 if __name__ == '__main__':
 
-	# Select agent.
-	agent = Learner()
+    # Select agent.
+    agent = Learner()
 
-	# Empty list to save history.
-	hist = []
+    # Empty list to save history.
+    hist = []
 
-	# Run games. 
-	run_games(agent, hist, 200, 1)
-
-	# Save history. 
-	np.savetxt('score_1overT.csv',hist,delimiter=',')
-	np.save('hist',np.array(hist))
+    # Run games. 
+    run_games(agent, hist, 200, 1)
+    np.savetxt('score.csv', hist, delimiter=',')
+    # Save history. 
+    np.save('hist',np.array(hist))
 
 
